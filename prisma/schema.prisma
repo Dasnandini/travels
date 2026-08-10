@@ -1,0 +1,337 @@
+// Prisma Schema for Bus Reservation & Ticket Management System
+// Better Auth + Google OAuth Foundation
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+model User {
+  id            String      @id @default(cuid())
+  name          String?
+  email         String?     @unique
+  emailVerified Boolean     @default(false)
+  image         String?
+  role          UserRole    @default(USER)
+  status        UserStatus  @default(ACTIVE)
+  lastLoginAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+
+  @@index([role])
+  @@index([status])
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([providerId, accountId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String?
+  entityId  String?
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+}
+
+enum StopStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum RouteStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Stop {
+  id            String     @id @default(cuid())
+
+  name          String
+  city          String
+  state         String
+  country       String     @default("India")
+
+  address       String?
+  landmark      String?
+
+  googlePlaceId String?    @unique
+
+  latitude      Decimal?   @db.Decimal(10, 7)
+  longitude     Decimal?   @db.Decimal(10, 7)
+
+  status        StopStatus @default(ACTIVE)
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  routeStops    RouteStop[]
+
+  @@unique([name, city, state])
+  @@index([name])
+  @@index([city])
+  @@index([state])
+  @@index([status])
+}
+
+model Route {
+  id          String      @id @default(cuid())
+
+  name        String
+  code        String      @unique
+  description String?
+
+  status      RouteStatus @default(ACTIVE)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  stops       RouteStop[]
+  services    BusService[]
+
+  @@index([name])
+  @@index([status])
+}
+
+model RouteStop {
+  id       String @id @default(cuid())
+
+  routeId  String
+  stopId   String
+
+  sequence Int
+
+  route        Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stop         Stop          @relation(fields: [stopId], references: [id], onDelete: Restrict)
+  serviceStops ServiceStop[]
+
+  @@unique([routeId, sequence])
+  @@unique([routeId, stopId])
+
+  @@index([routeId])
+  @@index([stopId])
+}
+
+enum BusStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  RETIRED
+}
+
+enum BusType {
+  SEATER
+  SEMI_SLEEPER
+  SLEEPER
+}
+
+model Bus {
+  id                  String      @id @default(cuid())
+
+  busNumber           String      @unique
+  registrationNumber  String      @unique
+  name                String?
+  type                BusType
+  description         String?
+
+  status              BusStatus   @default(ACTIVE)
+
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  seats               BusSeat[]
+  services            BusService[]
+
+  @@index([status])
+  @@index([type])
+  @@index([busNumber])
+  @@index([registrationNumber])
+}
+
+enum SeatType {
+  SEAT
+  SLEEPER
+}
+
+enum SeatPosition {
+  LEFT
+  RIGHT
+  AISLE
+  WINDOW
+  CENTER
+}
+
+enum Deck {
+  LOWER
+  UPPER
+}
+
+model BusSeat {
+  id               String       @id @default(cuid())
+
+  busId            String
+
+  seatNumber       String
+  seatType         SeatType     @default(SEAT)
+
+  row              Int
+  column           Int
+
+  position         SeatPosition @default(WINDOW)
+  deck             Deck         @default(LOWER)
+
+  isWindow         Boolean      @default(false)
+  isFemaleReserved Boolean      @default(false)
+
+  isActive         Boolean      @default(true)
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  bus              Bus          @relation(fields: [busId], references: [id], onDelete: Cascade)
+
+  @@unique([busId, seatNumber])
+  @@index([busId])
+  @@index([busId, deck])
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model BusService {
+  id            String        @id @default(cuid())
+
+  serviceCode   String        @unique
+  name          String
+
+  busId         String
+  routeId       String
+
+  status        ServiceStatus @default(ACTIVE)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  bus           Bus           @relation(fields: [busId], references: [id], onDelete: Restrict)
+  route         Route         @relation(fields: [routeId], references: [id], onDelete: Restrict)
+
+  operatingDays ServiceOperatingDay[]
+  stops         ServiceStop[]
+
+  @@index([busId])
+  @@index([routeId])
+  @@index([status])
+  @@index([serviceCode])
+}
+
+model ServiceOperatingDay {
+  id        String     @id @default(cuid())
+
+  serviceId String
+  day       Weekday
+
+  service   BusService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, day])
+  @@index([serviceId])
+}
+
+model ServiceStop {
+  id              String     @id @default(cuid())
+
+  serviceId       String
+  routeStopId     String
+
+  arrivalTime     String?
+  departureTime   String?
+
+  boardingAllowed Boolean    @default(true)
+  droppingAllowed Boolean    @default(true)
+
+  service         BusService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  routeStop       RouteStop  @relation(fields: [routeStopId], references: [id], onDelete: Restrict)
+
+  @@unique([serviceId, routeStopId])
+  @@index([serviceId])
+  @@index([routeStopId])
+}
