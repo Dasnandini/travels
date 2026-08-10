@@ -58,9 +58,9 @@ export function UserProfileView({ user }: UserProfileViewProps) {
   const [activeTab, setActiveTab] = useState<"overview" | "payment" | "history">("overview");
 
   // User details state (for edit mode)
-  const [fullName, setFullName] = useState(user.name || "Nandini Das");
-  const [email] = useState(user.email || "dasnandini225@gmail.com");
-  const [phone, setPhone] = useState("+91 91234 56789");
+  const [fullName, setFullName] = useState(user.name || "");
+  const [email] = useState(user.email || "");
+  const [phone, setPhone] = useState("");
 
   // Edit Modal State
   const [isEditing, setIsEditing] = useState(false);
