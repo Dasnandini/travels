@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useService } from "@/features/operations/services/hooks/use-service";
 import { useUpdateService } from "@/features/operations/services/hooks/use-update-service";
@@ -9,7 +9,7 @@ import { ServiceForm } from "@/features/operations/services/components/service-f
 import { Skeleton } from "@/components/ui/skeleton";
 import { ServiceStatus } from "@/generated/prisma/enums";
 
-export default function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function ServiceDetailPageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -78,5 +78,13 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ id: st
       onDeactivate={handleDeactivate}
       isDeactivating={updateServiceMutation.isPending}
     />
+  );
+}
+
+export default function ServiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="space-y-4 max-w-4xl mx-auto p-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>}>
+      <ServiceDetailPageContent params={params} />
+    </Suspense>
   );
 }

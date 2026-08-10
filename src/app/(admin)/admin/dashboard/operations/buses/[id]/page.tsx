@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useBus } from "@/features/operations/buses/hooks/use-bus";
 import { useUpdateBus } from "@/features/operations/buses/hooks/use-update-bus";
@@ -9,7 +9,7 @@ import { BusForm } from "@/features/operations/buses/components/bus-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BusStatus } from "@/generated/prisma/enums";
 
-export default function BusDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function BusDetailPageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -78,5 +78,13 @@ export default function BusDetailPage({ params }: { params: Promise<{ id: string
       onDeactivate={handleDeactivate}
       isDeactivating={updateBusMutation.isPending}
     />
+  );
+}
+
+export default function BusDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="space-y-4 max-w-4xl mx-auto p-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" /></div>}>
+      <BusDetailPageContent params={params} />
+    </Suspense>
   );
 }

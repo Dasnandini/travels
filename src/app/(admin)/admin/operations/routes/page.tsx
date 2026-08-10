@@ -1,14 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { RoutesHeader } from "@/features/operations/routes/components/routes-header";
 import { RoutesTable } from "@/features/operations/routes/components/routes-table";
 import { useRoutes } from "@/features/operations/routes/hooks/use-routes";
 import { useUpdateRoute } from "@/features/operations/routes/hooks/use-update-route";
 import { ListRoutesParams, RouteStatus } from "@/features/operations/routes/types/route.types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function RoutesPage() {
+function RoutesPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -58,5 +59,13 @@ export default function RoutesPage() {
         isDeactivating={updateMutation.isPending}
       />
     </div>
+  );
+}
+
+export default function RoutesPage() {
+  return (
+    <Suspense fallback={<div className="space-y-4 p-6"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>}>
+      <RoutesPageContent />
+    </Suspense>
   );
 }

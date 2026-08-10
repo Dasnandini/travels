@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { StopsHeader } from "@/features/operations/stops/components/stops-header";
 import { StopsTable } from "@/features/operations/stops/components/stops-table";
@@ -9,8 +9,9 @@ import { useStops } from "@/features/operations/stops/hooks/use-stops";
 import { useCreateStop } from "@/features/operations/stops/hooks/use-create-stop";
 import { useUpdateStop } from "@/features/operations/stops/hooks/use-update-stop";
 import { StopItem, ListStopsParams, StopStatus } from "@/features/operations/stops/types/stop.types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default function StopsPage() {
+function StopsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -97,5 +98,13 @@ export default function StopsPage() {
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
     </div>
+  );
+}
+
+export default function StopsPage() {
+  return (
+    <Suspense fallback={<div className="space-y-4 p-6"><Skeleton className="h-10 w-48" /><Skeleton className="h-64 w-full" /></div>}>
+      <StopsPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useState } from "react";
+import React, { use, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -10,7 +10,7 @@ import { RouteDetails } from "@/features/operations/routes/components/route-deta
 import { RouteForm } from "@/features/operations/routes/components/route-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function RouteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function RouteDetailPageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -97,5 +97,13 @@ export default function RouteDetailPage({ params }: { params: Promise<{ id: stri
       onDeactivate={handleDeactivate}
       isDeactivating={updateMutation.isPending}
     />
+  );
+}
+
+export default function RouteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto space-y-6 pt-4"><Skeleton className="h-6 w-32" /><Skeleton className="h-10 w-64" /></div>}>
+      <RouteDetailPageContent params={params} />
+    </Suspense>
   );
 }
