@@ -32,7 +32,7 @@ export interface ListStopsParams {
 
 export interface StopFormValues {
   name: string;
-  code: string;
+  code?: string;
   city: string;
   state: string;
   country?: string;

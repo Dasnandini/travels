@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { Route, Prisma, RouteStatus } from "@/generated/prisma/client";
 import { CreateRouteInput, UpdateRouteInput, ListRoutesQuery } from "./route.types";
+import { ApiError } from "@/utils/api-error";
 
 export type RouteWithStops = Prisma.RouteGetPayload<{
   include: {
@@ -92,24 +93,47 @@ export class RouteRepository {
     return prisma.$transaction(async (tx) => {
       const updateData: Prisma.RouteUpdateInput = {};
 
-      if (data.name !== undefined) updateData.name = data.name;
-      if (data.code !== undefined) updateData.code = data.code.toUpperCase();
+      if (data.name !== undefined) updateData.name = data.name.trim();
+      if (data.code !== undefined) updateData.code = data.code.trim().toUpperCase();
       if (data.description !== undefined) updateData.description = data.description;
       if (data.status !== undefined) updateData.status = data.status;
 
       if (newOrderedStopIds && newOrderedStopIds.length > 0) {
-        // Delete existing route stops for this route
-        await tx.routeStop.deleteMany({
+        const existingRouteStops = await tx.routeStop.findMany({
           where: { routeId: id },
+          orderBy: { sequence: "asc" },
         });
 
-        // Re-create new route stops with sequence 1..N
-        updateData.stops = {
-          create: newOrderedStopIds.map((stopId, index) => ({
-            stopId,
-            sequence: index + 1,
-          })),
-        };
+        const currentStopIds = existingRouteStops.map((rs) => rs.stopId);
+        const stopsChanged =
+          newOrderedStopIds.length !== currentStopIds.length ||
+          newOrderedStopIds.some((stopId, index) => stopId !== currentStopIds[index]);
+
+        if (stopsChanged) {
+          const activeServiceStopsCount = await tx.serviceStop.count({
+            where: { routeStopId: { in: existingRouteStops.map((rs) => rs.id) } },
+          });
+
+          if (activeServiceStopsCount > 0) {
+            throw ApiError.badRequest(
+              "Cannot modify stops on this route because it is assigned to active bus services. Please update or remove the bus services first.",
+              "ROUTE_IN_USE"
+            );
+          }
+
+          // Delete existing route stops for this route
+          await tx.routeStop.deleteMany({
+            where: { routeId: id },
+          });
+
+          // Re-create new route stops with sequence 1..N
+          updateData.stops = {
+            create: newOrderedStopIds.map((stopId, index) => ({
+              stopId,
+              sequence: index + 1,
+            })),
+          };
+        }
       }
 
       const updatedRoute = await tx.route.update({

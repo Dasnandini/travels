@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { Prisma } from "@/generated/prisma/client";
 import { errorResponse } from "@/utils/api-response";
 
 export class ApiError extends Error {
@@ -61,6 +62,18 @@ export function handleApiError(error: unknown): NextResponse {
       422,
       formattedDetails
     );
+  }
+
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === "P2002") {
+      const targets = (error.meta?.target as string[]) || [];
+      const targetStr = Array.isArray(targets) ? targets.join(", ") : String(targets);
+      return errorResponse(
+        "CONFLICT",
+        `A record with this ${targetStr || "unique detail"} already exists.`,
+        409
+      );
+    }
   }
 
   // Generic fallback without exposing stack traces or SQL details

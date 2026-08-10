@@ -3,13 +3,15 @@ import { StopStatus } from "@/generated/prisma/enums";
 
 export const createStopSchema = z.object({
   name: z.string().min(1, "Stop name is required"),
-  code: z.string().min(1, "Stop code is required"),
+  code: z.string().optional(),
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   country: z.string().optional().default("India"),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),
   address: z.string().optional().nullable(),
+  landmark: z.string().optional().nullable(),
+  googlePlaceId: z.string().optional().nullable(),
   status: z.nativeEnum(StopStatus).optional().default("ACTIVE"),
 });
 

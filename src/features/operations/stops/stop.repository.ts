@@ -4,18 +4,22 @@ import { CreateStopInput, UpdateStopInput, ListStopsQuery } from "./stop.types";
 
 export class StopRepository {
   async create(data: CreateStopInput): Promise<Stop> {
+    const googlePlaceId = data.googlePlaceId && data.googlePlaceId.trim() !== "" ? data.googlePlaceId.trim() : null;
+    const address = data.address && data.address.trim() !== "" ? data.address.trim() : null;
+    const landmark = data.landmark && data.landmark.trim() !== "" ? data.landmark.trim() : null;
+
     return prisma.stop.create({
       data: {
-        name: data.name,
-        city: data.city,
-        state: data.state,
-        country: data.country ?? "India",
-        address: data.address ?? null,
-        landmark: data.landmark ?? null,
-        googlePlaceId: data.googlePlaceId ?? null,
-        latitude: data.latitude !== undefined && data.latitude !== null ? new Prisma.Decimal(data.latitude) : null,
-        longitude: data.longitude !== undefined && data.longitude !== null ? new Prisma.Decimal(data.longitude) : null,
-        status: StopStatus.ACTIVE,
+        name: data.name.trim(),
+        city: data.city.trim(),
+        state: data.state.trim(),
+        country: data.country?.trim() || "India",
+        address,
+        landmark,
+        googlePlaceId,
+        latitude: data.latitude !== undefined && data.latitude !== null && !isNaN(Number(data.latitude)) ? new Prisma.Decimal(data.latitude) : null,
+        longitude: data.longitude !== undefined && data.longitude !== null && !isNaN(Number(data.longitude)) ? new Prisma.Decimal(data.longitude) : null,
+        status: data.status || StopStatus.ACTIVE,
       },
     });
   }
@@ -66,21 +70,21 @@ export class StopRepository {
   async update(id: string, data: UpdateStopInput): Promise<Stop> {
     const updateData: Prisma.StopUpdateInput = {};
 
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.city !== undefined) updateData.city = data.city;
-    if (data.state !== undefined) updateData.state = data.state;
-    if (data.country !== undefined) updateData.country = data.country;
-    if (data.address !== undefined) updateData.address = data.address;
-    if (data.landmark !== undefined) updateData.landmark = data.landmark;
-    if (data.googlePlaceId !== undefined) updateData.googlePlaceId = data.googlePlaceId;
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.city !== undefined) updateData.city = data.city.trim();
+    if (data.state !== undefined) updateData.state = data.state.trim();
+    if (data.country !== undefined) updateData.country = data.country.trim();
+    if (data.address !== undefined) updateData.address = data.address && data.address.trim() !== "" ? data.address.trim() : null;
+    if (data.landmark !== undefined) updateData.landmark = data.landmark && data.landmark.trim() !== "" ? data.landmark.trim() : null;
+    if (data.googlePlaceId !== undefined) updateData.googlePlaceId = data.googlePlaceId && data.googlePlaceId.trim() !== "" ? data.googlePlaceId.trim() : null;
     if (data.status !== undefined) updateData.status = data.status;
 
     if (data.latitude !== undefined) {
-      updateData.latitude = data.latitude !== null ? new Prisma.Decimal(data.latitude) : null;
+      updateData.latitude = data.latitude !== null && !isNaN(Number(data.latitude)) ? new Prisma.Decimal(data.latitude) : null;
     }
 
     if (data.longitude !== undefined) {
-      updateData.longitude = data.longitude !== null ? new Prisma.Decimal(data.longitude) : null;
+      updateData.longitude = data.longitude !== null && !isNaN(Number(data.longitude)) ? new Prisma.Decimal(data.longitude) : null;
     }
 
     return prisma.stop.update({
